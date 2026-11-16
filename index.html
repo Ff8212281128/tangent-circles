@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آموزش هندسه - مساحت و محیط</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <style>
+        body {
+            background-color: #1a252f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Vazirmatn', sans-serif;
+            overflow: hidden;
+        }
+
+        /* قاب چوبی تخته سیاه */
+        .wood-frame {
+            background: #8B5A2B;
+            background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 2px, transparent 2px, transparent 4px);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.6);
+            position: relative;
+            transform-origin: center center;
+            transition: transform 0.3s ease;
+        }
+
+        /* تخته سیاه */
+        .blackboard {
+            background: #234b3a;
+            background-image: radial-gradient(circle at center, #2e634d 0%, #173527 100%);
+            width: 900px;
+            height: 600px;
+            position: relative;
+            border-radius: 5px;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.7);
+            overflow: hidden;
+        }
+
+        /* افکت گچ */
+        .chalk-text {
+            color: #e0e0e0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8), 0 0 5px rgba(255,255,255,0.2);
+            font-size: 22px;
+            position: relative;
+            line-height: 1.6;
+            opacity: 0;
+            transition: opacity 0.5s;
+            margin-bottom: 10px;
+        }
+
+        .yellow-text { color: #f1c40f; text-shadow: 1px 1px 2px rgba(0,0,0,0.8), 0 0 5px rgba(241, 196, 15, 0.5); }
+        .red-text { color: #e74c3c; text-shadow: 1px 1px 2px rgba(0,0,0,0.8), 0 0 5px rgba(231, 76, 60, 0.5); }
+        .blue-text { color: #3498db; text-shadow: 1px 1px 2px rgba(0,0,0,0.8), 0 0 5px rgba(52, 152, 219, 0.5); }
+        .green-text { color: #2ecc71; text-shadow: 1px 1px 2px rgba(0,0,0,0.8), 0 0 5px rgba(46, 204, 113, 0.5); }
+        .cyan-text { color: #00bfff; text-shadow: 1px 1px 2px rgba(0,0,0,0.8), 0 0 5px rgba(0, 191, 255, 0.5); }
+
+        #text-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 450px;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            z-index: 10;
+        }
+
+        svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .shape {
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .draw-line {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            transition: stroke-dashoffset 1s ease-in-out;
+        }
+
+        /* دکمه ری استارت و متن طراح */
+        .bottom-controls {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        #restart-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Vazirmatn';
+            opacity: 0.5;
+            transition: 0.3s;
+        }
+        #restart-btn:hover { opacity: 1; }
+
+        .designer-text {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 16px;
+            font-family: 'Vazirmatn';
+        }
+
+        /* الگوی هاشور */
+        .hatch {
+            fill: url(#hatch-pattern);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        .hatch-copy {
+            fill: url(#hatch-pattern);
+        }
+
+        /* کلاس برای انیمیشن ها */
+        .fade-transition {
+            transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+        }
+
+        /* ریسپانسیو برای موبایل */
+        @media (max-width: 950px) { .wood-frame { transform: scale(0.8); } }
+        @media (max-width: 768px) { .wood-frame { transform: scale(0.6); } }
+        @media (max-width: 580px) { .wood-frame { transform: scale(0.45); } }
+        @media (max-width: 420px) { .wood-frame { transform: scale(0.35); } }
+    </style>
+</head>
+<body>
+
+<div class="wood-frame">
+    <div class="blackboard">
+        <div id="text-container"></div>
+
+        <svg viewBox="0 0 900 600">
+            <defs>
+                <pattern id="hatch-pattern" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                    <line x1="0" y1="0" x2="0" y2="10" stroke="#f1c40f" stroke-width="2" />
+                </pattern>
+            </defs>
+            
+            <!-- گروه اصلی شکل که به سمت چپ منتقل شده است -->
+            <g transform="translate(-60, 0)">
+                <!-- ================= المان‌های فاز اول ================= -->
+                <circle id="c1" cx="320" cy="200" r="80" fill="none" stroke="#e0e0e0" stroke-width="2" class="draw-line" />
+                <circle id="c2" cx="480" cy="200" r="80" fill="none" stroke="#e0e0e0" stroke-width="2" class="draw-line" />
+                <circle id="c3" cx="400" cy="338.6" r="80" fill="none" stroke="#e0e0e0" stroke-width="2" class="draw-line" />
+
+                <path id="string" d="M 320 120 L 480 120 A 80 80 0 0 1 549.3 240 L 470.7 376.6 A 80 80 0 0 1 329.3 376.6 L 250.7 240 A 80 80 0 0 1 320 120 Z" fill="none" stroke="#f1c40f" stroke-width="4" class="draw-line" stroke-linejoin="round"/>
+
+                <polygon id="triangle" points="320,200 480,200 400,338.6" fill="none" stroke="#e0e0e0" stroke-width="2" class="shape" stroke-dasharray="5,5"/>
+
+                <text id="label-2r-1" x="400" y="190" fill="#e74c3c" font-size="20" font-weight="bold" text-anchor="middle" class="shape">2r</text>
+                <text id="label-2r-2" x="450" y="280" fill="#e74c3c" font-size="20" font-weight="bold" text-anchor="middle" class="shape" transform="rotate(60 450 280)">2r</text>
+                <text id="label-2r-3" x="350" y="280" fill="#e74c3c" font-size="20" font-weight="bold" text-anchor="middle" class="shape" transform="rotate(-60 350 280)">2r</text>
+
+                <path id="angle-60-1" d="M 340 200 A 20 20 0 0 0 330 217.3" fill="none" stroke="#f1c40f" stroke-width="2" class="shape"/>
+                <path id="angle-60-2" d="M 460 200 A 20 20 0 0 1 470 217.3" fill="none" stroke="#f1c40f" stroke-width="2" class="shape"/>
+                <path id="angle-60-3" d="M 390 338.6 A 20 20 0 0 1 410 338.6" fill="none" stroke="#f1c40f" stroke-width="2" class="shape"/>
+
+                <line id="top-tangent" x1="320" y1="120" x2="480" y2="120" stroke="#e74c3c" stroke-width="5" class="shape" />
+                <text id="tangent-text" x="400" y="105" fill="#e74c3c" font-size="18" font-weight="bold" text-anchor="middle" class="shape">مماس مشترک خارجی = 2r</text>
+
+                <line id="radius-1" x1="320" y1="200" x2="320" y2="120" stroke="#e0e0e0" stroke-width="2" class="shape" stroke-dasharray="4,4"/>
+                <line id="radius-2" x1="480" y1="200" x2="480" y2="120" stroke="#e0e0e0" stroke-width="2" class="shape" stroke-dasharray="4,4"/>
+                <path id="angle-90-1" d="M 320 140 L 340 140 L 340 120" fill="none" stroke="#e74c3c" stroke-width="2" class="shape"/>
+                <path id="angle-90-2" d="M 480 140 L 460 140 L 460 120" fill="none" stroke="#e74c3c" stroke-width="2" class="shape"/>
+
+                <!-- مستطیل بالایی -->
+                <polygon id="rect1" points="320,200 480,200 480,120 320,120" fill="rgba(46, 204, 113, 0.2)" stroke="#2ecc71" stroke-width="3" class="shape"/>
+                <text id="rect-text" x="400" y="165" fill="#2ecc71" font-size="24" font-weight="bold" text-anchor="middle" class="shape">مستطیل</text>
+                <path id="rect-90-1" d="M 330 200 A 10 10 0 0 0 320 190" fill="none" stroke="#e74c3c" stroke-width="2" class="shape"/>
+                <path id="rect-90-2" d="M 470 200 A 10 10 0 0 1 480 190" fill="none" stroke="#e74c3c" stroke-width="2" class="shape"/>
+
+                <!-- مستطیل راست -->
+                <polygon id="rect2" points="480,200 400,338.6 469.3,378.6 549.3,240" fill="rgba(46, 204, 113, 0.2)" stroke="#2ecc71" stroke-width="3" class="shape"/>
+                <!-- مستطیل چپ -->
+                <polygon id="rect3" points="320,200 400,338.6 330.7,378.6 250.7,240" fill="rgba(46, 204, 113, 0.2)" stroke="#2ecc71" stroke-width="3" class="shape"/>
+
+                <!-- کمان قرمز (اصلاح شده و منطبق بر دایره) -->
+                <path id="angle-120" d="M 320 120 A 80 80 0 0 0 250.7 240" fill="none" stroke="#e74c3c" stroke-width="4" class="shape"/>
+                <text id="angle-120-text" x="260" y="170" fill="#e74c3c" font-size="20" font-weight="bold" text-anchor="middle" class="shape">120&deg;</text>
+
+                <!-- مجموع زوایا با ترتیب صحیح چپ به راست -->
+                <text id="angle-sum-text" x="720" y="200" fill="#3498db" font-size="26" font-weight="bold" text-anchor="middle" class="shape" style="direction: ltr;">90 + 90 + 60 = 240&deg;</text>
+                <text id="angle-sum-text-2" x="720" y="240" fill="#3498db" font-size="26" font-weight="bold" text-anchor="middle" class="shape" style="direction: ltr;">360 - 240 = 120&deg;</text>
+
+                <path id="sector-1" d="M 320 200 L 320 120 A 80 80 0 0 0 250.7 240 Z" class="hatch" stroke="#f1c40f" stroke-width="2"/>
+                <path id="sector-2" d="M 480 200 L 480 120 A 80 80 0 0 1 549.3 240 Z" class="hatch" stroke="#f1c40f" stroke-width="2"/>
+                <path id="sector-3" d="M 400 338.6 L 329.3 376.6 A 80 80 0 0 0 470.7 376.6 Z" class="hatch" stroke="#f1c40f" stroke-width="2"/>
+
+                <g id="new-circle-group" class="shape">
+                    <circle cx="200" cy="500" r="50" fill="none" stroke="#e0e0e0" stroke-width="2" />
+                    <line x1="200" y1="500" x2="250" y2="500" stroke="#e0e0e0" stroke-width="1" />
+                    <line x1="200" y1="500" x2="175" y2="456.7" stroke="#e0e0e0" stroke-width="1" />
+                    <line x1="200" y1="500" x2="175" y2="543.3" stroke="#e0e0e0" stroke-width="1" />
+                </g>
+
+                <g id="blue-highlights" class="shape">
+                    <circle cx="200" cy="500" r="50" fill="none" stroke="#00bfff" stroke-width="4" />
+                    <path d="M 320 120 A 80 80 0 0 0 250.7 240" fill="none" stroke="#00bfff" stroke-width="4" />
+                    <path d="M 480 120 A 80 80 0 0 1 549.3 240" fill="none" stroke="#00bfff" stroke-width="4" />
+                    <path d="M 470.7 376.6 A 80 80 0 0 1 329.3 376.6" fill="none" stroke="#00bfff" stroke-width="4" />
+                    <text x="260" y="505" fill="#00bfff" font-size="20" font-weight="bold">محیط = 2&pi;r</text>
+                </g>
+
+                <!-- ================= المان‌های فاز دوم (مساحت) ================= -->
+
+                <path id="orange-area" d="M 400 200 A 80 80 0 0 1 360 269.3 A 80 80 0 0 1 440 269.3 A 80 80 0 0 1 400 200 Z" fill="rgba(230, 126, 34, 0.8)" stroke="#e67e22" stroke-width="2" class="shape"/>
+
+                <g id="triangle-sectors" class="shape">
+                    <path d="M 320 200 L 400 200 A 80 80 0 0 1 360 269.3 Z" class="hatch" stroke="#f1c40f" stroke-width="2"/>
+                    <path d="M 480 200 L 400 200 A 80 80 0 0 0 440 269.3 Z" class="hatch" stroke="#f1c40f" stroke-width="2"/>
+                    <path d="M 400 338.6 L 360 269.3 A 80 80 0 0 0 440 269.3 Z" class="hatch" stroke="#f1c40f" stroke-width="2"/>
+                </g>
+
+                <!-- کپی شکل مثلثی در پایین -->
+                <g id="copy-triangle-group" class="shape fade-transition" style="opacity: 0;">
+                    <polygon points="320,400 480,400 400,538.6" fill="none" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="5,5"/>
+                    <path d="M 320 400 L 400 400 A 80 80 0 0 1 360 469.3 Z" class="hatch-copy" stroke="#f1c40f" stroke-width="2"/>
+                    <path d="M 480 400 L 400 400 A 80 80 0 0 0 440 469.3 Z" class="hatch-copy" stroke="#f1c40f" stroke-width="2"/>
+                    <path d="M 400 538.6 L 360 469.3 A 80 80 0 0 1 440 469.3 Z" class="hatch-copy" stroke="#f1c40f" stroke-width="2"/>
+                    <path d="M 400 400 A 80 80 0 0 1 360 469.3 A 80 80 0 0 1 440 469.3 A 80 80 0 0 1 400 400 Z" fill="rgba(35, 75, 58, 1)" stroke="#e67e22" stroke-width="2"/>
+                </g>
+
+                <g id="semicircle-group" class="shape fade-transition" style="opacity: 0;">
+                    <path d="M 200 500 L 120 500 A 80 80 0 0 1 160 430.7 Z" class="hatch-copy" stroke="#f1c40f" stroke-width="2"/>
+                    <path d="M 200 500 L 160 430.7 A 80 80 0 0 1 240 430.7 Z" class="hatch-copy" stroke="#f1c40f" stroke-width="2"/>
+                    <path d="M 200 500 L 240 430.7 A 80 80 0 0 1 280 500 Z" class="hatch-copy" stroke="#f1c40f" stroke-width="2"/>
+                    <line x1="120" y1="500" x2="280" y2="500" stroke="#f1c40f" stroke-width="3" />
+                </g>
+            </g>
+
+        </svg>
+
+        <div class="bottom-controls">
+            <span class="designer-text">طراح: سیده فاطمه رفیعی</span>
+            <button id="restart-btn" onclick="location.reload()">پخش مجدد</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    async function fadeIn(elements, duration = 500) {
+        if (!elements) return;
+        let arr = Array.isArray(elements) ? elements : [elements];
+        arr = arr.filter(el => el != null);
+        if (arr.length === 0) return;
+        arr.forEach(el => {
+            el.style.transition = `opacity ${duration}ms`;
+            el.style.opacity = 1;
+        });
+        await sleep(duration);
+    }
+
+    async function fadeOut(elements, duration = 500) {
+        if (!elements) return;
+        let arr = Array.isArray(elements) ? elements : [elements];
+        arr = arr.filter(el => el != null);
+        if (arr.length === 0) return;
+        arr.forEach(el => {
+            el.style.transition = `opacity ${duration}ms`;
+            el.style.opacity = 0;
+        });
+        await sleep(duration);
+    }
+
+    async function draw(element, duration = 1000) {
+        if (!element) return;
+        element.style.transition = `stroke-dashoffset ${duration}ms ease-in-out`;
+        element.style.opacity = 1;
+        element.getBoundingClientRect(); 
+        element.style.strokeDashoffset = 0;
+        await sleep(duration);
+    }
+
+    async function typeText(containerId, htmlText, speed = 40, customStyle = '', returnElement = false) {
+        const container = document.getElementById(containerId);
+        if (!container) return null;
+        
+        const newEl = document.createElement('div');
+        newEl.className = 'chalk-text';
+        if(customStyle) newEl.style.cssText = customStyle;
+        container.appendChild(newEl);
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlText;
+        const words = tempDiv.innerText.split(' ');
+        
+        let currentText = '';
+        for (let i = 0; i < words.length; i++) {
+            currentText += words[i] + ' ';
+            newEl.innerHTML = currentText;
+            await sleep(speed);
+        }
+        newEl.innerHTML = htmlText; 
+        newEl.style.opacity = 1;
+        if(returnElement) return newEl;
+    }
+
+    async function clearBoard() {
+        document.getElementById('text-container').innerHTML = '';
+        const shapes = document.querySelectorAll('.shape, .draw-line');
+        shapes.forEach(el => el.style.opacity = 0);
+        await sleep(1000);
+    }
+
+    async function startAnimation() {
+        await sleep(1000);
+
+        // ================= فاز اول: طول نخ =================
+        await typeText('text-container', 'سه دایره به شعاع r دو به دو برهم مماسند.');
+        await sleep(500);
+
+        await Promise.all([
+            draw(document.getElementById('c1'), 1000),
+            draw(document.getElementById('c2'), 1000),
+            draw(document.getElementById('c3'), 1000)
+        ]);
+        
+        await typeText('text-container', 'این سه دایره بوسیله نخی به هم بسته شده اند.');
+        await sleep(500);
+
+        await draw(document.getElementById('string'), 2000);
+        
+        await typeText('text-container', '<span class="yellow-text" style="font-weight:bold; font-size: 26px;">طول نخ = ؟</span>');
+        await sleep(1000);
+
+        await fadeIn(document.getElementById('triangle'));
+        await sleep(500);
+
+        await fadeIn([
+            document.getElementById('label-2r-1'),
+            document.getElementById('label-2r-2'),
+            document.getElementById('label-2r-3')
+        ]);
+        await sleep(1000);
+
+        await typeText('text-container', '<span class="chalk-text">در مثلث متساوی الاضلاع تمام زاویه ها ۶۰ درجه اند.</span>');
+        
+        await fadeIn([
+            document.getElementById('angle-60-1'),
+            document.getElementById('angle-60-2'),
+            document.getElementById('angle-60-3')
+        ]);
+        await sleep(1000);
+
+        await fadeIn([document.getElementById('top-tangent'), document.getElementById('tangent-text')]);
+        await sleep(1500);
+        await fadeOut([document.getElementById('top-tangent'), document.getElementById('tangent-text')]); 
+        await sleep(500);
+
+        const radius1 = document.getElementById('radius-1');
+        const radius2 = document.getElementById('radius-2');
+        radius1.classList.add('draw-line'); radius1.style.strokeDashoffset = 1000;
+        radius2.classList.add('draw-line'); radius2.style.strokeDashoffset = 1000;
+        await Promise.all([draw(radius1, 500), draw(radius2, 500)]);
+
+        const angle901 = document.getElementById('angle-90-1');
+        const angle902 = document.getElementById('angle-90-2');
+        await fadeIn([angle901, angle902]);
+        await sleep(1000);
+        await fadeOut([angle901, angle902], 1000);
+        await sleep(500);
+
+        const rect1 = document.getElementById('rect1');
+        const rectText = document.getElementById('rect-text');
+        await fadeIn([rect1, rectText]);
+        await sleep(1000);
+        await fadeOut(rectText, 1000);
+        await sleep(500);
+
+        const rect2 = document.getElementById('rect2');
+        const rect3 = document.getElementById('rect3');
+        await fadeIn([rect2, rect3]);
+        await sleep(1000);
+
+        const rect901 = document.getElementById('rect-90-1');
+        const rect902 = document.getElementById('rect-90-2');
+        await fadeIn([rect901, rect902]);
+        await sleep(1000);
+
+        const angleSum = document.getElementById('angle-sum-text');
+        const angleSum2 = document.getElementById('angle-sum-text-2');
+        
+        await fadeIn(angleSum);
+        await sleep(500);
+        await fadeIn(angleSum2);
+        await sleep(1000);
+        
+        const angle120 = document.getElementById('angle-120');
+        const angle120Text = document.getElementById('angle-120-text');
+        await fadeIn([angle120, angle120Text]);
+        await sleep(1500);
+
+        const sectors = [
+            document.getElementById('sector-1'),
+            document.getElementById('sector-2'),
+            document.getElementById('sector-3')
+        ];
+        await fadeIn(sectors);
+        await sleep(1500);
+        
+        await fadeOut([rect1, rect2, rect3, angle120, angle120Text, rect901, rect902]);
+        await sleep(1000);
+        await fadeOut(sectors); 
+        await sleep(500);
+
+        await fadeIn(document.getElementById('new-circle-group'));
+        await sleep(1000);
+        
+        await fadeIn(document.getElementById('blue-highlights'));
+        await sleep(2000);
+
+        await fadeOut([angleSum, angleSum2]);
+        await sleep(500);
+
+        await typeText('text-container', '<span class="yellow-text" style="font-size: 24px; display:block; margin-top:20px;">طول کمان برابر است با:</span>', 50);
+        await sleep(500);
+        
+        await typeText('text-container', 
+            '<div style="direction: ltr; text-align: right; width: 100%; color: #e0e0e0; font-size: 28px; font-weight: bold; margin-top:10px;">' + 
+            '<span class="yellow-text">6r</span> + <span class="blue-text">2&pi;r</span>' + 
+            '</div>', 100);
+            
+        await sleep(500);
+        
+        await typeText('text-container', 
+            '<div style="direction: ltr; text-align: right; width: 100%; color: #2ecc71; font-size: 26px; font-weight: bold; margin-top: 10px;">' + 
+            '= 2r(3 + &pi;)' + 
+            '</div>', 100);
+
+        // ================= شروع فاز دوم =================
+        await sleep(1000); 
+
+        await clearBoard();
+
+        await typeText('text-container', 'سه دایره به شعاع‌های برابر r دو به دو بر هم مماس‌اند. مطابق شکل مقابل این سه دایره به وسیلهٔ نخی بسته شده‌اند.');
+        
+        await fadeIn([
+            document.getElementById('c1'),
+            document.getElementById('c2'),
+            document.getElementById('c3'),
+            document.getElementById('triangle')
+        ]);
+        await sleep(1000);
+
+        await typeText('text-container', '<span class="yellow-text" style="font-weight:bold; font-size: 24px; margin-top:20px;">مساحت ناحیه محدود به سه دایره؟</span>', 50);
+        await sleep(1000);
+
+        await fadeIn(document.getElementById('orange-area'));
+        await sleep(1000);
+
+        await typeText('text-container', '<span class="blue-text" style="font-size: 22px; font-weight:bold; margin-top:15px;">مساحت مثلث - مجموع مساحت سه قطاع</span>', 50);
+        await sleep(1000);
+
+        await fadeIn(document.getElementById('triangle-sectors'));
+        await sleep(1500);
+
+        const copyGroup = document.getElementById('copy-triangle-group');
+        copyGroup.style.transform = 'translateY(0px)';
+        await fadeIn(copyGroup, 1000);
+        
+        await fadeOut(document.getElementById('triangle-sectors'), 800);
+        await sleep(500);
+
+        copyGroup.style.transform = 'translateY(20px)';
+        await fadeOut(copyGroup, 800);
+        
+        const semicircle = document.getElementById('semicircle-group');
+        semicircle.style.transform = 'translateY(-20px) scale(0.9)';
+        semicircle.style.opacity = 0;
+        
+        setTimeout(() => {
+            semicircle.style.transform = 'translateY(0px) scale(1)';
+            semicircle.style.opacity = 1;
+        }, 100);
+        
+        await sleep(1500);
+
+        await typeText('text-container', 
+            '<div style="direction: ltr; text-align: right; width: 100%; color: #e0e0e0; font-size: 22px; font-weight: bold; margin-top:20px;">' + 
+            'S = (&radic;3 / 4)(2r)&sup2; - (&pi; / 2)r&sup2;' + 
+            '</div>', 80);
+            
+        await sleep(800);
+
+        await typeText('text-container', 
+            '<div style="direction: ltr; text-align: right; width: 100%; color: #2ecc71; font-size: 24px; font-weight: bold; margin-top: 10px;">' + 
+            'S = r&sup2;(&radic;3 - &pi;/2)' + 
+            '</div>', 100);
+    }
+
+    window.onload = startAnimation;
+</script>
+</body>
+</html>
